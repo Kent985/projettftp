@@ -35,7 +35,7 @@ def runServer(addr, timeout, thread):
 
 def put(addr, filename, targetname, blksize, timeout):
     while True:
-        data, addr = s2.recvfrom(blksize)
+        data, addr_server = s2.recvfrom(blksize)
     pass
 
 ########################################################################
@@ -43,7 +43,7 @@ def put(addr, filename, targetname, blksize, timeout):
 
 def get(addr, filename, targetname, blksize, timeout):
     while True:
-        data, addr = s2.recvfrom(blksize)
+        data, addr_server = s2.recvfrom(blksize)
     pass
 
 # EOF
