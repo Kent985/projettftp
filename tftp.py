@@ -4,6 +4,7 @@ TFTP Module.
 
 import socket
 import sys
+import random
 
 ########################################################################
 #                          COMMON ROUTINES                             #
@@ -17,8 +18,10 @@ import sys
 
 
 def runServer(addr, timeout, thread):
-    # todo
-    pass
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(addr)
+    print(addr)
+    return s
 
 ########################################################################
 #                             CLIENT SIDE                              #

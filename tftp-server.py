@@ -11,6 +11,7 @@ import socket
 
 TIMEOUT = 2
 PORT = 6969
+HOST = "localhost"
 
 parser = argparse.ArgumentParser(prog='tftp-server')
 parser.add_argument('-p', '--port', type=int, default=PORT)
@@ -23,10 +24,7 @@ args = parser.parse_args()
 if args.cwd != '': os.chdir(args.cwd)
 
 # run main server loop
-tftp.runServer(('', args.port), args.timeout, args.thread)
-
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.bind(('', PORT))
+s = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 
 while True:
     data, addr = s.recvfrom(1500)
