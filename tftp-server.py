@@ -7,6 +7,7 @@ import sys
 import os
 import argparse
 import tftp
+import socket
 
 TIMEOUT = 2
 PORT = 6969
@@ -24,4 +25,11 @@ if args.cwd != '': os.chdir(args.cwd)
 # run main server loop
 tftp.runServer(('', args.port), args.timeout, args.thread)
 
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind(('', PORT))
+
+while True:
+    data, addr = s.recvfrom(1500)
+    print('[{}:{}] client request: {}'.format(addr[0], addr[1], data))
+    
 # EOF
