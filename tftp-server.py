@@ -29,5 +29,17 @@ s = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 while True:
     data, addr = s.recvfrom(1500)
     print('[{}:{}] client request: {}'.format(addr[0], addr[1], data))
+    print('data =',data)
+    tftp.put(addr, "", "", 0, 0)
+    opcode = data[0:2]
+    rest = data[2:]
+    opcode = int.from_bytes(opcode, byteorder='big')
+    args = rest.split(b'\x00')
+    filename = args[0].decode('ascii')
+    mode = args[1].decode('ascii')
+    print("Opcode = ",opcode)
+    print("Args = ",args)
+    print("Filename = ",filename)
+    print("Mode = ",mode)
     
 # EOF
