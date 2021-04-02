@@ -4,18 +4,10 @@ TFTP Module.
 
 import socket
 import sys
-import random
 
 ########################################################################
 #                          COMMON ROUTINES                             #
 ########################################################################
-
-
-HOST = "localhost"
-PORT = random.randint(50000,60000)
-s2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s2.bind((HOST,PORT))
-
 
 ########################################################################
 #                             SERVER SIDE                              #
@@ -29,9 +21,11 @@ def runServer(addr, timeout, thread):
     return s
 
 def send(addr, data): #Pour envoyer
+    print("requête get vers l'addresse ", addr)
     pass
 
 def recieve(addr, data): #Pour recevoir
+    print("requête put vers l'addresse ", addr)
     pass
 
 ########################################################################
@@ -39,23 +33,33 @@ def recieve(addr, data): #Pour recevoir
 ########################################################################
 
 
-def put(addr, filename, targetname, blksize, timeout): #Faire la même chose que en get (se référer en bas de la feuille de projet techno, ou bien la rfc)
+def put(addr, filename, targetname, blksize, timeout):
+    addr_init = list(addr)
+    addr_init[1] = 6969
+    addr_init = tuple(addr_init)
     filename_byte = bytes(filename, 'utf-8')
     data = (b'\x00') + (b'\x02') + filename_byte + (b'\x00') + (b'octets\x00')
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.sendto(data,addr)
-    pass
+    s.bind(addr)
+    s.sendto(data,addr_init)
+    while True:
+        data, addr = s.recvfrom(1024)
+    s.close()
 
 ########################################################################
 
 
 def get(addr, filename, targetname, blksize, timeout):
-    print(blksize)
+    addr_init = list(addr)
+    addr_init[1] = 6969
+    addr_init = tuple(addr_init)
     filename_byte = bytes(filename, 'utf8')
-    data = (b'\x00') + (b'\x01') + filename_byte + (b'\x00') + b'octets\x00' #J'ai supprimé les boucles, car ces fonctions ne sont que coté client 
-    print(data)                                                              # (c'était marqué en haut mais j'avais pas vu, et ces fonctions sont appelés par tftp-client.py)
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     #J'ai donc fais deux fonctions, send et put, qui (je suis pas sur du tout) 
-    s.sendto(data, addr)                                                     #feront les boucles pour envoyer/recevoir des données.
-    pass
+    data = (b'\x00') + (b'\x01') + filename_byte + (b'\x00') + b'octets\x00'                                                        
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(addr)
+    s.sendto(data, addr_init)      
+    while True:
+        data, addr = s.recvfrom(1024)
+    s.close()                                             
 
 # EOF
