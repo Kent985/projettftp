@@ -8,12 +8,11 @@ import os
 import argparse
 import tftp
 import socket
+import random
 
 TIMEOUT = 2
 PORT = 6969
-HOST = "localhost"
-
-data_test = b'Hello2 Hello3 Hello4 Hello5 Hello6 Hello7 Hello8 Hello9 Hello10 Hello11'
+HOST = ""
 
 parser = argparse.ArgumentParser(prog='tftp-server')
 parser.add_argument('-p', '--port', type=int, default=PORT)
@@ -40,13 +39,13 @@ while True:
     mode = args[1].decode('ascii')
     print("Adresse = ",addr)
     print("Opcode = ",opcode)
-    print("Args = ",args)
     print("Filename = ",filename)
     print("Mode = ",mode)
+    socket_Y = s1 # A changer
     if opcode == 1:
-        tftp.recieve(addr, data)
+        tftp.send(addr, data, socket_Y)
     elif opcode == 2:
-        tftp.send(addr, data)
+        tftp.recieve(addr, data, socket_Y)
     else:
         sys.exit(1)
 

@@ -7,13 +7,11 @@ import sys
 import os
 import argparse
 import tftp
-import random
 
 TIMEOUT = 2
-PORT = random.randint(50000,60000)
+PORT = 6969
 BLKSIZE = 512
 
-print("Port source X = ", PORT)
 
 parser = argparse.ArgumentParser(prog='tftp-client')
 parser.add_argument('-p', '--port', type=int, default=PORT)
