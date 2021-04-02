@@ -4,17 +4,14 @@ TFTP Module.
 
 import socket
 import sys
-import random
+
 
 ########################################################################
 #                          COMMON ROUTINES                             #
 ########################################################################
 
 
-HOST = "localhost"
-PORT = random.randint(50000,60000)
-s2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s2.bind((HOST,PORT))
+
 
 
 ########################################################################
