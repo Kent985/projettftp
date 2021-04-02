@@ -29,12 +29,12 @@ def send(addr_dest,  data, socket, filename): #Pour envoyer
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
     with open(filename, mode='r') as f:
         while True:
-            data_to_send = f.read(BLKSIZE)
+            data_to_send = f.read(BLKSIZE) # BLKSIZE définit dans la section common routines (read prend en paramètre des bytes donc pas de conversion à faire)
             if not data_to_send:
-                socket.sendto(b'over', addr_dest)
+                socket.sendto(b'over', addr_dest) #Temporaire, juste pour indiquer la fin de l'envoi 
                 break
-            data_bytes = bytes(data_to_send, 'utf-8')
-            socket.sendto(data_bytes, addr_dest)
+            data_bytes = bytes(data_to_send, 'utf-8') 
+            socket.sendto(data_bytes, addr_dest) 
             ## Requêtes ACK a faire.
         f.close()
         socket.close()
@@ -84,9 +84,9 @@ def get(addr, filename, targetname, blksize, timeout):
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize)
         print(data_serv.decode())
-        if data_serv == b'over': # Temporaire, a changer par ACK.
+        if data_serv == b'over': # Temporaire, a changer.
             break
-        f.write(data_serv.decode())
+        f.write(data_serv.decode()) #Pour écrire dans le fichier 
     s_client.close()
 
 # EOF
