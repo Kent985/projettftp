@@ -40,6 +40,10 @@ def recieve(addr, data): #Pour recevoir
 
 
 def put(addr, filename, targetname, blksize, timeout): #Faire la même chose que en get (se référer en bas de la feuille de projet techno, ou bien la rfc)
+    filename_byte = bytes(filename, 'utf-8')
+    data = (b'\x00') + (b'\x02') + filename_byte + (b'\x00') + (b'octets\x00')
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.sendto(data,addr)
     pass
 
 ########################################################################
