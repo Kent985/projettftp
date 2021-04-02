@@ -42,9 +42,9 @@ while True:
     print("Opcode = ",opcode)
     print("Filename = ",filename)
     if opcode == 1:
-        tftp.send(addr, data, sTemp)
+        tftp.send(addr, data, sTemp, filename)
     elif opcode == 2:
-        tftp.recieve(addr, data, sTemp)
+        tftp.recieve(addr, data, sTemp, filename)
     else:
         sys.exit(1)
 
