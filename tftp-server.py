@@ -28,7 +28,11 @@ if args.cwd != '': os.chdir(args.cwd)
 s1 = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 
 while True:
-    data, addr = s1.recvfrom(1500)
+    data, addr = s.recvfrom(1500)
+    
+    sTemp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sTemp.bind(("localhost", random.randint(50000,60000)))
+    
     print('[{}:{}] client request: {}'.format(addr[0], addr[1], data))
     print('data =',data)
     opcode = data[0:2]
@@ -36,8 +40,7 @@ while True:
     opcode = int.from_bytes(opcode, byteorder='big')
     args = rest.split(b'\x00')
     filename = args[0].decode('ascii')
-    mode = args[1].decode('ascii')
-    print("Adresse = ",addr)
+    print("Adresse = ", addr)
     print("Opcode = ",opcode)
     print("Filename = ",filename)
     print("Mode = ",mode)
