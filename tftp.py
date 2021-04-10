@@ -26,17 +26,25 @@ def runServer(addr, timeout, thread):
     print(addr)
     return s
 
-def send(addr_dest,  data, socket, filename): #Pour envoyer
+def send(addr_dest, data, socket, filename): 
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
+    ack = 1
     with open(filename, mode='r') as f:
         while True:
-            data_to_send = f.read(BLKSIZE) # BLKSIZE définit dans la section common routines (read prend en paramètre des bytes donc pas de conversion à faire)
+            data_to_send = f.read(BLKSIZE)
             if not data_to_send:
-                socket.sendto(b'over', addr_dest) #Temporaire, juste pour indiquer la fin de l'envoi 
+                socket.sendto(b'', addr_dest)
                 break
             data_bytes = bytes(data_to_send, 'utf-8') 
-            socket.sendto(data_bytes, addr_dest) 
-            ## Requêtes ACK a faire.
+            socket.sendto(data_bytes, addr_dest)
+            data_ack, addr_ack = socket.recvfrom(BLKSIZE)
+            ack_serv = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
+            if data_ack != ack_serv:
+                print("ACK error")
+                socket.sendto(b'ACK error, please retry',addr_dest)
+                break
+            ack+=1
+            print(data_ack)
         f.close()
         socket.close()
         print("Requête get du fichier ", filename, "terminé")
@@ -61,11 +69,10 @@ def recieve(addr_dest,  data, socket): #Pour recevoir
 
 
 def put(addr, filename, targetname, blksize, timeout):
-    X = random.randint(50000,60000)
     filename_byte = bytes(filename, 'utf-8')
     data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s_client.bind(('localhost', X))
+    s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data,addr)
     data_serv, addr_serv = s_client.recvfrom(blksize)
     while True:
@@ -83,12 +90,16 @@ def get(addr, filename, targetname, blksize, timeout):
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
     f = open(filename,"w+") # Nom du fichier à changer.
+    ack = 1
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize)
         print(data_serv.decode())
-        if data_serv == b'over': # Temporaire, a changer.
+        if data_serv == b'': 
             break
-        f.write(data_serv.decode()) #Pour écrire dans le fichier 
+        f.write(data_serv.decode())
+        ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
+        ack+=1
+        s_client.sendto(ack_msg,addr_serv)
     s_client.close()
 
 # EOF
