@@ -42,7 +42,12 @@ while True:
     print("Opcode = ",opcode)
     print("Filename = ",filename)
     if opcode == 1:
-        tftp.send(addr, data, sTemp, filename)
+        file_path = "server_files/" + filename
+        if os.path.exists(file_path):
+            tftp.send(addr, data, sTemp, filename)
+        else:
+            msg = b'The filename ' + bytes(filename,'utf-8') + b'doesnt exists'
+            s1.sendto(msg,addr )
     elif opcode == 2:
         tftp.recieve(addr, data, sTemp, filename)
     else:

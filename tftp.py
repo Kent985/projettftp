@@ -51,14 +51,15 @@ def send(addr_dest, data, socket, filename):
         socket.close()
         print("Requête get du fichier ", filename, "terminé")
 
-def recieve(addr_dest,  data, socket): #Pour recevoir
+def recieve(addr_dest,  data, socket, filename): #Pour recevoir
     print("Requête put vers l'adresse de destination = ", addr_dest)
     socket.sendto(b'\x00\x04\x00\x00',addr_dest)
     numPaquet = 1
-    with open(filename, "w") as f:
+    filename_path = "server_files/" + filename
+    with open(filename_path, "w") as f:
         while(True):
             data, addr = socket.recvfrom(1500)
-            f.write(data)
+            f.write(data.decode())
             socket.sendto(b'\x00\x04' + numPaquet.to_bytes(2, 'big'), addr_dest)
             if (len(data) != BLKSIZE):
                 break
@@ -77,21 +78,25 @@ def put(addr, filename, targetname, blksize, timeout):
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data,addr)
-    
     data_serv, addr_serv = s_client.recvfrom(1500)
-    if(data != b'\x00\x04\x00\x00'):
-        print("le paquet reçu n'a pas l'ack attendu !")
-        break
+    if(data_serv != b'\x00\x04\x00\x00'):
+        print("1 le paquet reçu n'a pas l'ack attendu !")
+        return
     f = open(filename, "r")
     num_paquet = 1
-    while(os.path.getsize(r'filename') != 0):
-        s_client.sendto(f.read(BLKSIZE), addr_serv)
+    while True:
+        content = f.read(BLKSIZE)
+        print(content)
+        if content == '':
+            break
+        content_bytes = bytes(content,'utf-8')
+        s_client.sendto(content_bytes, addr_serv)
         rep_ack, _ = s_client.recvfrom(1500)
         
         ack_attendu = b'\x00\x04' + num_paquet.to_bytes(2, 'big')
         if(rep_ack != ack_attendu):
-            print("le paquet reçu n'a pas l'ack attendu !")
-            break
+            print("2 le paquet reçu n'a pas l'ack attendu !")
+            return
         num_paquet += 1
     f.close()
     s_client.close()
