@@ -7,6 +7,7 @@ import sys
 import random
 
 
+
 ########################################################################
 #                          COMMON ROUTINES                             #
 ########################################################################
@@ -53,15 +54,15 @@ def send(addr_dest, data, socket, filename):
 def recieve(addr_dest,  data, socket): #Pour recevoir
     print("Requête put vers l'adresse de destination = ", addr_dest)
     socket.sendto(b'\x00\x04\x00\x00',addr_dest)
-    num_Paquet = 1
+    numPaquet = 1
     with open(filename, "w") as f:
         while(True):
             data, addr = socket.recvfrom(1500)
             f.write(data)
-            socket.sendto(b'\x00\x04' + (x).to_bytes(4, 'big'), addr_dest)
-            if (len(data) != 512):
+            socket.sendto(b'\x00\x04' + numPaquet.to_bytes(2, 'big'), addr_dest)
+            if (len(data) != BLKSIZE):
                 break
-            x += 1        
+            numPaquet += 1        
     pass
 
 ########################################################################
@@ -72,13 +73,26 @@ def recieve(addr_dest,  data, socket): #Pour recevoir
 def put(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf-8')
     data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
+    
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data,addr)
-    data_serv, addr_serv = s_client.recvfrom(blksize)
-    while True:
-        data_serv, addr_serv = s_client.recvfrom(blksize)
-        print(data_serv.decode())
+    
+    data_serv, addr_serv = s_client.recvfrom(1500)
+    if(data != b'\x00\x04\x00\x00'):
+        #A coder : gestion des erreurs
+    
+    f = open(filename, "r")
+    num_paquet = 1
+    while(len(f) != 0):
+        s_client.sendto(f.read(BLKSIZE), addr_serv)
+        rep_ack, _ = s_client.recvfrom(1500)
+        
+        ack_attendu = b'\x00\x04' + num_paquet.to_bytes(2, 'big')
+        if(rep_ack != ack_attendu):
+            #A coder : gestion des erreurs
+        num_paquet += 1
+    f.close()
     s_client.close()
 
 ########################################################################
