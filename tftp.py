@@ -5,7 +5,7 @@ TFTP Module.
 import socket
 import sys
 import random
-
+import os
 
 
 ########################################################################
@@ -80,17 +80,18 @@ def put(addr, filename, targetname, blksize, timeout):
     
     data_serv, addr_serv = s_client.recvfrom(1500)
     if(data != b'\x00\x04\x00\x00'):
-        #A coder : gestion des erreurs
-    
+        print("le paquet reçu n'a pas l'ack attendu !")
+        break
     f = open(filename, "r")
     num_paquet = 1
-    while(len(f) != 0):
+    while(os.path.getsize(r'filename') != 0):
         s_client.sendto(f.read(BLKSIZE), addr_serv)
         rep_ack, _ = s_client.recvfrom(1500)
         
         ack_attendu = b'\x00\x04' + num_paquet.to_bytes(2, 'big')
         if(rep_ack != ack_attendu):
-            #A coder : gestion des erreurs
+            print("le paquet reçu n'a pas l'ack attendu !")
+            break
         num_paquet += 1
     f.close()
     s_client.close()
