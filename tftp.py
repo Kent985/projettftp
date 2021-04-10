@@ -29,7 +29,8 @@ def runServer(addr, timeout, thread):
 def send(addr_dest, data, socket, filename): 
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
     ack = 1
-    with open(filename, mode='r') as f:
+    file_path = "server_files/" + filename
+    with open(file_path, mode='r') as f:
         while True:
             data_to_send = f.read(BLKSIZE)
             if not data_to_send:
@@ -89,7 +90,7 @@ def get(addr, filename, targetname, blksize, timeout):
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
-    f = open(filename,"w+") # Nom du fichier à changer.
+    f = open(filename,"w+") 
     ack = 1
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize)
