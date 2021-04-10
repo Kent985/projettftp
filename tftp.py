@@ -4,6 +4,7 @@ TFTP Module.
 
 import socket
 import sys
+import random
 
 
 ########################################################################
@@ -60,10 +61,11 @@ def recieve(addr_dest,  data, socket): #Pour recevoir
 
 
 def put(addr, filename, targetname, blksize, timeout):
+    X = random.randint(50000,60000)
     filename_byte = bytes(filename, 'utf-8')
-    data = b'\x00\x02' + filename_byte + b'\x00octets\x00'
+    data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s_client.bind(localhost, random.randint(50000,60000))
+    s_client.bind(('localhost', X))
     s_client.sendto(data,addr)
     data_serv, addr_serv = s_client.recvfrom(blksize)
     while True:
@@ -76,11 +78,11 @@ def put(addr, filename, targetname, blksize, timeout):
 
 def get(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf8')
-    data = (b'\x00\x01') + filename_byte + (b'\x00octets\x00')                                                           
+    data = (b'\x00\x01') + filename_byte + (b'\x00octet\x00')                                                           
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
-    f = open("file_res","w+") # Nom du fichier à changer.
+    f = open(filename,"w+") # Nom du fichier à changer.
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize)
         print(data_serv.decode())
