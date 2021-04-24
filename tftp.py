@@ -25,33 +25,32 @@ def runServer(addr, timeout, thread):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(addr)
     print(addr)
+    print(addr)
     return s
 
-def send(addr_dest, data, socket, filename): 
+def send(addr_dest, data, socket, filename):  ##get
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
     ack = 1
-    file_path = "server_files/" + filename
+    file_path = filename
     with open(file_path, mode='r') as f:
         while True:
             data_to_send = f.read(BLKSIZE)
-            if not data_to_send:
-                socket.sendto(b'', addr_dest)
+            data_bytes = bytes(data_to_send, 'utf-8')
+            data_paquet = b'\x03\x00' + ack.to_bytes(2,'big') + data_bytes
+            print("Envoi du paquet",data_paquet)
+            socket.sendto(data_paquet, addr_dest)
+            if (len(data_paquet) < BLKSIZE):
+                print("Fin de l'envoi")
+                f.close() 
+                socket.close()
                 break
-            data_bytes = bytes(data_to_send, 'utf-8') 
-            socket.sendto(data_bytes, addr_dest)
             data_ack, addr_ack = socket.recvfrom(BLKSIZE)
-            ack_serv = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
-            if data_ack != ack_serv:
-                print("ACK error")
-                socket.sendto(b'ACK error, please retry',addr_dest)
-                break
             ack+=1
-            print(data_ack)
         f.close()
         socket.close()
         print("Requête get du fichier ", filename, "terminé")
 
-def recieve(addr_dest,  data, socket, filename): #Pour recevoir
+def recieve(addr_dest,  data, socket, filename): #put
     print("Requête put vers l'adresse de destination = ", addr_dest)
     socket.sendto(b'\x00\x04\x00\x00',addr_dest)
     numPaquet = 1
@@ -74,7 +73,6 @@ def recieve(addr_dest,  data, socket, filename): #Pour recevoir
 def put(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf-8')
     data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
-    
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data,addr)
@@ -110,14 +108,19 @@ def get(addr, filename, targetname, blksize, timeout):
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
+    print("Paquet envoyé")
     f = open(filename,"w+") 
     ack = 1
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize)
-        print(data_serv.decode())
-        if data_serv == b'': 
+        print("Reception du paquet", data_serv)
+        data_to_write_bytes = data_serv[4:]
+        data_to_write = data_to_write_bytes.decode()
+        f.write(data_to_write)
+        print("Ecriture de ", data_to_write)
+        if data_serv == b'' or len(data_serv) < BLKSIZE:  
+            ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
             break
-        f.write(data_serv.decode())
         ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
         ack+=1
         s_client.sendto(ack_msg,addr_serv)
