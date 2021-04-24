@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""
-TFTP Server Command.
-"""
+"TFTP Server Command."
+
 
 import sys
 import os
@@ -28,6 +27,7 @@ if args.cwd != '': os.chdir(args.cwd)
 s1 = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 
 while True:
+    print("En attente de demande")
     data, addr = s1.recvfrom(1500)
     sTemp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sTemp.bind(("127.0.0.1", 0))
@@ -35,12 +35,15 @@ while True:
     print('data =',data)
     opcode = data[0:2]
     rest = data[2:]
+    print("Reste = ",rest)
     opcode = int.from_bytes(opcode, byteorder='big')
     args = rest.split(b'\x00')
     filename = args[0].decode('ascii')
     print("Adresse = ", addr)
     print("Opcode = ",opcode)
     print("Filename = ",filename)
+    print(args)
+    print("\n")
     if opcode == 1:
         tftp.send(addr, data, sTemp, filename)
     elif opcode == 2:

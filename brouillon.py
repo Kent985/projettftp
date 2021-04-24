@@ -37,26 +37,26 @@ def runServer(addr, timeout, thread):
     return s
 
 def send(addr_dest, data, socket, filename):  ##get
-    print("\n")
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
     ack = 1
-    filename = filename
+    print(filename)
     isExist = os.path.exists(filename)
+    print(isExist)
     if (not isExist):
         print("Le fichier n'existe pas")
         ack_error_msg = b'\x00\x05\x00\x11' + bytes("FILE NOT FOUND", 'utf-8') + b'\x00'
         socket.sendto(ack_error_msg, addr_dest)
         socket.close()
         return
-    with open(filename, mode='rb') as f:
+    with open(filename, mode='r') as f:
         while True:
-            data_bytes = f.read(BLKSIZE)
+            data_to_send = f.read(BLKSIZE)
+            data_bytes = bytes(data_to_send, 'utf-8')
             data_paquet = b'\x00\x03' + ack.to_bytes(2,'big') + data_bytes
             print("Envoi du paquet",data_paquet)
             socket.sendto(data_paquet, addr_dest)
             data_ack, addr_ack = socket.recvfrom(BLKSIZE)
-            print("Reception ACK:", data_ack)
-            ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
+            ack_msg = (b'\x00\x08') + ack.to_bytes(2,byteorder='big')
             if (ack_msg != data_ack):
                 print("Le ACK attendu ne correspond pas au ACK reçu")
                 ack_error_msg = b'\x00\x05\x00\x10' + bytes("ACK ERR", 'utf-8') + b'\x00'
@@ -95,6 +95,7 @@ def recieve(addr_dest,  data, socket, filename): #Put
 def put(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf-8')
     data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
+
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_client.bind(('localhost', random.randint(50000,60000)))
     
@@ -124,27 +125,24 @@ def put(addr, filename, targetname, blksize, timeout):
 
 def get(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf8')
-    print("Blksize = ", blksize)
-    data = (b'\x00\x01') + filename_byte + (b'\x00octet\x00')
-    if (blksize != 512):
-        blksize_bytes = blksize.to_bytes(2,'big')
-        data = data + b'blksize' + blksize_bytes                                                           
+    data = (b'\x00\x01') + filename_byte + (b'\x00octet\x00')                                                           
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
     print("Paquet envoyé")
-    f = open(filename,"wb") 
+    f = open(filename,"w+") 
     ack = 1
     while True:
-        data_serv, addr_serv = s_client.recvfrom(blksize+4)
+        data_serv, addr_serv = s_client.recvfrom(blksize)
         print("Reception du paquet", data_serv)
         print()
         if (data_serv[0:2] == b'\x00\x05'):
             printError(data_serv)
             sys.exit(1)
         data_to_write_bytes = data_serv[4:]
-        f.write(data_to_write_bytes)
-        print("Ecriture de ", data_to_write_bytes)
+        data_to_write = data_to_write_bytes.decode()
+        f.write(data_to_write)
+        print("Ecriture de ", data_to_write)
         ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
         ack+=1
         s_client.sendto(ack_msg,addr_serv)
