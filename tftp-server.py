@@ -30,7 +30,7 @@ s1 = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 while True:
     data, addr = s1.recvfrom(1500)
     sTemp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sTemp.bind(("", random.randint(50000,60000)))
+    sTemp.bind(("127.0.0.1", 0))
     print('[{}:{}] client request: {}'.format(addr[0], addr[1], data))
     print('data =',data)
     opcode = data[0:2]
@@ -42,12 +42,7 @@ while True:
     print("Opcode = ",opcode)
     print("Filename = ",filename)
     if opcode == 1:
-        file_path = "server_files/" + filename
-        if os.path.exists(file_path):
-            tftp.send(addr, data, sTemp, filename)
-        else:
-            msg = b'The filename ' + bytes(filename,'utf-8') + b'doesnt exists'
-            s1.sendto(msg,addr )
+        tftp.send(addr, data, sTemp, filename)
     elif opcode == 2:
         tftp.recieve(addr, data, sTemp, filename)
     else:
