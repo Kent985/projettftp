@@ -41,32 +41,23 @@ while True:
     print("Adresse = ", addr)
     print("Opcode = ",opcode)
     print("Filename = ",filename)
-<<<<<<< HEAD
     print(args1)
     print("\n")
     if opcode == 1:
         if (args.thread == True):
-            t1 = threading.Thread(target = tftp.send, args=(addr,data,sTemp,filename))
+            t1 = threading.Thread(target = tftp.send, args=(addr,data,sTemp,filename,args.timeout))
             t1.start()
         else:
-            tftp.send(addr, data, sTemp, filename)
+            tftp.send(addr, data, sTemp, filename,args.timeout)
     elif opcode == 2:
         if (args.thread == True):
-            t2 = threading.Thread(target = tftp.recieve, args = (addr,data,sTemp,filename))
+            t2 = threading.Thread(target = tftp.recieve, args = (addr,data,sTemp,filename,args.timeout))
             t2.start()
         else:
-            tftp.recieve(addr, data, sTemp, filename)
-        t1.join()
-        t2.join()
-=======
-    if opcode == 1:
-        tftp.send(addr, data, sTemp, filename)
-    elif opcode == 2:
-        tftp.recieve(addr, data, sTemp, filename)
->>>>>>> 0805ec0c9c3c90e8e7d8c00fdcc1bcefd60b67b3
+            tftp.recieve(addr, data, sTemp, filename,args.timeout)
+        if (args.thread == True):
+            t1.join()
+            t2.join()
     else:
-        sys.exit(1)
-
-
-    
-# EOF
+        ack_error_msg = b'\x00\x05\x00\x10' + bytes("BAD OPCODE", 'utf-8') + b'\x00'
+        socket.sendto(ack_error_msg, addr)
