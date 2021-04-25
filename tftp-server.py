@@ -19,13 +19,13 @@ parser.add_argument('-p', '--port', type=int, default=PORT)
 parser.add_argument('-t', '--timeout', type=int, default=TIMEOUT)
 parser.add_argument('-c', '--cwd',  type=str, default='')
 parser.add_argument('--thread', action='store_true')
-argscmd = parser.parse_args()
+args = parser.parse_args()
 
 # change current working directory
-if argscmd.cwd != '': os.chdir(args.cwd)
+if args.cwd != '': os.chdir(args.cwd)
 
 # run main server loop
-s1 = tftp.runServer((HOST, argscmd.port), argscmd.timeout, argscmd.thread)
+s1 = tftp.runServer((HOST, args.port), args.timeout, args.thread)
 
 while True:
     print("En attente de demande")
@@ -38,23 +38,21 @@ while True:
     rest = data[2:]
     print("Reste = ",rest)
     opcode = int.from_bytes(opcode, byteorder='big')
-    args = rest.split(b'\x00')
-    filename = args[0].decode('ascii')
+    args1 = rest.split(b'\x00')
+    filename = args1[0].decode('ascii')
     print("Adresse = ", addr)
     print("Opcode = ",opcode)
     print("Filename = ",filename)
-    print(args)
+    print(args1)
     print("\n")
     if opcode == 1:
-        if (argscmd.thread == True):
-            print("Threading activé")
+        if (args.thread == True):
             t1 = threading.Thread(target = tftp.send, args=(addr,data,sTemp,filename))
             t1.start()
         else:
             tftp.send(addr, data, sTemp, filename)
     elif opcode == 2:
-        if (argscmd.thread == True):
-            print("Threading activé")
+        if (args.thread == True):
             t2 = threading.Thread(target = tftp.recieve, args = (addr,data,sTemp,filename))
             t2.start()
         else:
