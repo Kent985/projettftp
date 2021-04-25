@@ -8,7 +8,6 @@ import argparse
 import tftp
 import socket
 import random
-import threading
 
 TIMEOUT = 2
 PORT = 6969
@@ -36,13 +35,13 @@ while True:
     print('data =',data)
     opcode = data[0:2]
     rest = data[2:]
-    print("Reste = ",rest)
     opcode = int.from_bytes(opcode, byteorder='big')
     args1 = rest.split(b'\x00')
     filename = args1[0].decode('ascii')
     print("Adresse = ", addr)
     print("Opcode = ",opcode)
     print("Filename = ",filename)
+<<<<<<< HEAD
     print(args1)
     print("\n")
     if opcode == 1:
@@ -59,6 +58,12 @@ while True:
             tftp.recieve(addr, data, sTemp, filename)
         t1.join()
         t2.join()
+=======
+    if opcode == 1:
+        tftp.send(addr, data, sTemp, filename)
+    elif opcode == 2:
+        tftp.recieve(addr, data, sTemp, filename)
+>>>>>>> 0805ec0c9c3c90e8e7d8c00fdcc1bcefd60b67b3
     else:
         sys.exit(1)
 
