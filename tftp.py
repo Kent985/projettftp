@@ -39,6 +39,14 @@ def runServer(addr, timeout, thread):
 def send(addr_dest, data, socket, filename):  ##get
     print("\n")
     print("Requête get du fichier ",filename," vers l'adresse de destination = ", addr_dest)
+    data = data.decode()
+    data = data.split("\x00")
+    try:
+        blksize = data[4]
+        blksize = int(blksize)
+    except:
+        blksize = 512
+    print(blksize)
     ack = 1
     filename = filename
     isExist = os.path.exists(filename)
@@ -50,11 +58,12 @@ def send(addr_dest, data, socket, filename):  ##get
         return
     with open(filename, mode='rb') as f:
         while True:
-            data_bytes = f.read(BLKSIZE)
+            data_bytes = f.read(blksize)
+            print('data_bytes=',data_bytes)
             data_paquet = b'\x00\x03' + ack.to_bytes(2,'big') + data_bytes
             print("Envoi du paquet",data_paquet)
             socket.sendto(data_paquet, addr_dest)
-            data_ack, addr_ack = socket.recvfrom(BLKSIZE)
+            data_ack, addr_ack = socket.recvfrom(512) #ACK donc a ne pas changer
             print("Reception ACK:", data_ack)
             ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
             if (ack_msg != data_ack):
@@ -63,7 +72,7 @@ def send(addr_dest, data, socket, filename):  ##get
                 socket.sendto(ack_error_msg, addr_dest)
                 break
             ack+=1
-            if (len(data_paquet) < BLKSIZE):
+            if (len(data_bytes) < blksize):
                 print("Fin de l'envoi")
                 f.close() 
                 socket.close()
@@ -73,19 +82,41 @@ def send(addr_dest, data, socket, filename):  ##get
         print("Requête get du fichier ", filename, "terminé")
 
 def recieve(addr_dest,  data, socket, filename): #Put
-    socket.sendto(b'\x00\x04\x00\x00',addr_dest)
+    
+    data = data.decode()                                                           #
+    data = data.split("\x00")
+    try:
+        blksize = data[4]
+        blksize = int(blksize)
+    except:
+        blksize = 512
+
+    socket.sendto(b'\x00\x04\x00\x00',addr_dest)                                    #On envoie l'ACK0 
+
     numPaquet = 1
-    with open(filename, "w") as f:
+
+    with open(filename, "wb") as f:                                                 #On ouvre un fichier dans lequel écrire les dats qu'on reÃ§oit 
         while(True):
+
             data, addr = socket.recvfrom(1500)
+
+            if( data[:2] != b'\x00\x03' ):                                           #On vérifie l'opcode du paquet 
+                print("Erreur : L'opcode du paquet reçu n'est pas celui attendu")
+                sys.exit(1)
+
             onlyData = data[4:]
-            f.write(onlyData.decode())
-            socket.sendto(b'\x00\x04' + numPaquet.to_bytes(2, 'big'), addr_dest)
-            if (len(onlyData) < 512):
-                socket.close()
+
+            f.write(onlyData)
+
+            socket.sendto(b'\x00\x04' + numPaquet.to_bytes(2, 'big'), addr_dest)    #On envoie un ACK avec le bon numéro de block 
+
+            if( len(onlyData) != blksize ):                      #Si le data reçu est plus petit que blksize, c'est le dernier paquet... 
+                socket.close()                                   #... donc on ferme la socket et on break
                 break
+
             numPaquet += 1    
     pass
+
 
 ########################################################################
 #                             CLIENT SIDE                              #
@@ -93,30 +124,60 @@ def recieve(addr_dest,  data, socket, filename): #Put
 
 
 def put(addr, filename, targetname, blksize, timeout):
-    filename_byte = bytes(filename, 'utf-8')
-    data = b'\x00\x02' + filename_byte + b'\x00octet\x00'
-    s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    if( targetname != '' ):
+        fileToRead = targetname
+    else:
+        fileToRead = filename
+
+    isExist = os.path.exists(fileToRead)
+    if (not isExist):                                           #On vÃ©rifie que le fichier spÃ©cifiÃ© existe
+        print("Le fichier n'existe pas")                         
+        return
+    
+    filename_byte = bytes(fileToRead, 'utf-8')
+    data = b'\x00\x02' + filename_byte + b'\x00octet\x00'       #Préparation du 'data' de WRQ 
+
+    if (blksize != 512):                                        #Si 'blksize' != de la taille standard, ...
+        blksize = str(blksize)
+        data = data + b'blksize' + b'\x00' + blksize.encode('utf-8') + b'\x00'           #... On met le nouveau 'blksize' dans 'data'.
+        blksize = int(blksize)
+
+    s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #On créé la 'socket' client 
     s_client.bind(('localhost', random.randint(50000,60000)))
     
-    s_client.sendto(data,addr)
+    s_client.sendto(data,addr)                                  #Envoi de la demande WRQ.
 
-    ack0_serv, addr_serv = s_client.recvfrom(1500)
-    f = open(filename, "r")
+    ack0_serv, addr_serv = s_client.recvfrom(1500)              #Réception du ACK0 envoyé par le port où envoyer le/les fichiers.
+
+    if(ack0_serv[:2] != b'\x00\x04'):                           #Vérification de l'ACK. 
+        print("Erreur : L'opcode du paquet reçu n'est pas celui attendu")
+        sys.exit(1)
+
+    f = open(fileToRead, "rb")
     block = 1
     num_paquet = 1
+
     while True:
-        content = f.read(BLKSIZE)
-        print(content)
-        content_bytes = bytes(content,'utf-8')
-        paquetFini = b'\x00\x03'+ block.to_bytes(2, 'big') + content_bytes
-        s_client.sendto(paquetFini, addr_serv)
-        rep_ack, _ = s_client.recvfrom(1500)
+        content = f.read(blksize)                                             #On prépare le 'data' du paquet à envoyer. 
+        paquetFini = b'\x00\x03'+ block.to_bytes(2, 'big') + content   #On rajoute l'ACK et le 'block'.
+
+        s_client.sendto(paquetFini, addr_serv)                                #On envoie le paquet.
+
+        rep_ack, _ = s_client.recvfrom(1500)                                  #On reçoit l'ACK.
         ack_attendu = b'\x00\x04' + num_paquet.to_bytes(2, 'big')
+
+        if(ack_attendu != rep_ack):                                           #On vérifie que l'ACK reçu est le même que l'ACK attendu (n° de block). 
+            print("Erreur : L'opcode du paquet reçu n'est pas celui attendu")
+            sys.exit(1)
+
         num_paquet += 1
         block += 1
-        if content == '':
-            break
-    f.close()
+
+        if( len(content) != blksize ):                                        #Si 'content' n'est pas plein (si c'est le dernier paquet), 
+            break                                                             #on break à la fin du 'while'... 
+
+    f.close()                                                                 #... Et on ferme le fichier et la 'socket' 
     s_client.close()
 
 ########################################################################
@@ -126,9 +187,10 @@ def get(addr, filename, targetname, blksize, timeout):
     filename_byte = bytes(filename, 'utf8')
     print("Blksize = ", blksize)
     data = (b'\x00\x01') + filename_byte + (b'\x00octet\x00')
-    if (blksize != 512):
-        blksize_bytes = blksize.to_bytes(2,'big')
-        data = data + b'blksize' + blksize_bytes                                                           
+    if (blksize != 512):                                        #Si 'blksize' != de la taille standard, ...
+        blksize = str(blksize)
+        data = data + b'blksize' + b'\x00' + blksize.encode('utf-8') + b'\x00'           #... On met le nouveau 'blksize' dans 'data'.
+        blksize = int(blksize)                                                         
     s_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)                     
     s_client.bind(('localhost', random.randint(50000,60000)))
     s_client.sendto(data, addr)
@@ -138,7 +200,6 @@ def get(addr, filename, targetname, blksize, timeout):
     while True:
         data_serv, addr_serv = s_client.recvfrom(blksize+4)
         print("Reception du paquet", data_serv)
-        print()
         if (data_serv[0:2] == b'\x00\x05'):
             printError(data_serv)
             sys.exit(1)
@@ -148,8 +209,9 @@ def get(addr, filename, targetname, blksize, timeout):
         ack_msg = (b'\x00\x04') + ack.to_bytes(2,byteorder='big')
         ack+=1
         s_client.sendto(ack_msg,addr_serv)
-        if data_serv == b'' or len(data_serv) < BLKSIZE:  
+        if data_serv == b'' or len(data_serv) < blksize+4:  
             break
+    f.close()
     s_client.close()
 
 # EOF
