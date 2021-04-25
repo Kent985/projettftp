@@ -60,4 +60,4 @@ while True:
             t2.join()
     else:
         ack_error_msg = b'\x00\x05\x00\x10' + bytes("BAD OPCODE", 'utf-8') + b'\x00'
-        socket.sendto(ack_error_msg, addr)
+        sTemp.sendto(ack_error_msg, addr)

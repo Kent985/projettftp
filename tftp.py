@@ -65,7 +65,7 @@ def send(addr_dest, data, socket, filename, timeout):  ##get
             socket.sendto(data_paquet, addr_dest)
             socket.settimeout(timeout)
             try:
-                data_ack, addr_ack = socket.recvfrom(512) #ACK donc a ne pas changer
+                data_ack, _ = socket.recvfrom(512) #ACK donc a ne pas changer
             except:
                 print("Timeout exceeded")
                 timeout_error_msg = b'\x00\x05\x00\x05' + bytes("TIMEOUT", 'utf-8') + b'\x00'
@@ -107,7 +107,7 @@ def recieve(addr_dest,  data, socket, filename, timeout): #Put
         while(True):
             socket.settimeout(timeout)
             try:
-                data, addr = socket.recvfrom(1500)
+                data, _ = socket.recvfrom(1500)
             except:
                 print("Timeout exceeded")
                 timeout_error_msg = b'\x00\x05\x00\x05' + bytes("TIMEOUT", 'utf-8') + b'\x00'
